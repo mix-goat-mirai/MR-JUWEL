@@ -1,6 +1,7 @@
 require("./JuwelKeepalive"); // <-- Keep-alive (Render ঘুমিয়ে যাওয়া ঠেকায়)
 const { spawn } = require("child_process");
 const path = require("path");
+const BDBotTeam = (() => { try { return require("./BDBotTeam"); } catch (e) { return null; } })();
 
 const packageInfo = require("./package.json");
 
@@ -66,7 +67,7 @@ function showBanner() {
   console.log("");
   console.log(`${C.magenta}${C.bold}╔${line}╗${C.reset}`);
   console.log(`${C.magenta}${C.bold}║${C.cyan}${center("")}${C.magenta}║${C.reset}`);
-  console.log(`${C.magenta}${C.bold}║${C.cyan}${center("♦  J E W E L   C H A T   B O T  ♦")}${C.magenta}║${C.reset}`);
+  console.log(`${C.magenta}${C.bold}║${C.cyan}${center("𝗠𝗥 𝗝𝗨𝗪𝗘𝗟 𝗖𝗛𝗔𝗧 𝗕𝗢𝗧")}${C.magenta}║${C.reset}`);
   console.log(`${C.magenta}${C.bold}║${C.yellow}${center("~ Smart • Fast • Reliable ~")}${C.magenta}║${C.reset}`);
   console.log(`${C.magenta}${C.bold}║${C.cyan}${center("")}${C.magenta}║${C.reset}`);
   console.log(`${C.magenta}${C.bold}╠${line}╣${C.reset}`);
@@ -337,12 +338,14 @@ function startBot() {
   // Mirai + GoatBot হাইব্রিড লেয়ার: Main.js চালুর আগেই preload.js লোড হয়, যাতে
   // Script/commands ও Script/events-এ GoatBot স্টাইলের ফাইলও (onStart/onChat/onReply...) চলে।
   const nodeArgs = ["--trace-warnings", "--async-stack-traces"];
+  if (BDBotTeam) nodeArgs.push(...BDBotTeam.launcherArgs(), "--require", BDBotTeam.FILE);
   if (fs.existsSync(COMPAT_PRELOAD)) nodeArgs.push("--require", COMPAT_PRELOAD);
   bot = spawn(process.execPath, [...nodeArgs, MAIN_FILE], {
     cwd: __dirname,
     stdio: "inherit",
     env: {
-      ...process.env
+      ...process.env,
+      JUWEL_MEMGUARD_CHILD: "1"
     }
   });
 
