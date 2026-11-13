@@ -1,15 +1,22 @@
 const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
+const crypto = require("crypto");
 
 const CREDIT = "乛 M𝆠፝֟R ཐི༏ཋྀ JU𝆠፝֟W𝆠፝֟ELꜛཐི༏ཋྀ࿐";
 
+// Credit lock: if CREDIT or config.credits is changed, the command stops working
+const LOCK = "8f74924e81a157abaf089d90717e48a4949617a7379d20a2df567cb0ab0dad81";
+const sha = (s) => crypto.createHash("sha256").update(String(s), "utf8").digest("hex");
+const creditOk = () =>
+  sha(CREDIT) === LOCK && sha(module.exports.config.credits) === LOCK;
+
 module.exports.config = {
   name: "anime",
-  version: "1.3.0",
+  version: "2.1.0",
   hasPermssion: 0,
   credits: CREDIT,
-  description: "Anime Video",
+  description: "Random Anime Video",
   commandCategory: "Video",
   usages: "anime",
   cooldowns: 5,
@@ -40,20 +47,64 @@ const LINKS = [
   "https://i.imgur.com/yAF2Vv8.mp4"
 ];
 
+// Random mood shown in every caption
 const MOODS = [
   "Anime Mode 🎌",
   "Otaku Vibes 🔥",
   "Senpai Energy 🌸",
   "Epic Fight ⚔️",
-  "Kawaii Mood 💖"
+  "Kawaii Mood 💖",
+  "Hero Arc 🦸",
+  "Villain Era 😈",
+  "Power Up ⚡",
+  "Final Boss 👹",
+  "Chill Slice of Life ☕",
+  "Sad Edit 🥀",
+  "Sigma Aura 😎",
+  "Shonen Spirit 🔥",
+  "Cherry Blossom Dream 🌸",
+  "Tokyo Night 🌃",
+  "Sakura Breeze 🍃",
+  "Plot Twist 🌀",
+  "Opening Theme 🎶",
+  "Training Arc 💪",
+  "Waifu Material 💞",
+  "Dark Mode 🌑",
+  "Legend Unlocked 🏆",
+  "Ninja Vibes 🥷",
+  "Dragon Energy 🐉",
+  "Cat Girl Mode 🐱"
 ];
 
-const MAX_SIZE = 25 * 1024 * 1024; // Messenger লিমিট ~25MB
-const MAX_TRIES = 6;
+// Random one-line caption shown under the mood
+const TAGLINES = [
+  "Time to power up!",
+  "Believe in the hype you feel.",
+  "Every legend has an opening scene.",
+  "Grab some snacks, the episode is starting.",
+  "Plot armor: activated.",
+  "Another day, another epic edit.",
+  "Senpai noticed this one!",
+  "This scene hits different.",
+  "Main character energy only.",
+  "Is this the final episode already?",
+  "Fan service for the soul.",
+  "Rewatch value: infinite.",
+  "Straight from the anime multiverse.",
+  "Your daily dose of anime.",
+  "Today's episode is brought to you by hype.",
+  "Pause the world, press play on anime.",
+  "That moment when the music kicks in.",
+  "Cinematic mode: on.",
+  "Nothing beats a good opening.",
+  "Enjoy the ride, nakama!"
+];
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+const MAX_SIZE = 25 * 1024 * 1024; // Messenger limit is about 25MB
+const MIN_SIZE = 10 * 1024;        // smaller than this means a broken file
+const MAX_TRIES = 8;
+
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 function shuffle(arr) {
   const a = [...arr];
@@ -64,17 +115,29 @@ function shuffle(arr) {
   return a;
 }
 
+// Check the file header to be sure it is really a video (mp4 / webm)
+function isVideoFile(file) {
+  const fd = fs.openSync(file, "r");
+  const buf = Buffer.alloc(12);
+  fs.readSync(fd, buf, 0, 12, 0);
+  fs.closeSync(fd);
+  const isMp4 = buf.slice(4, 8).toString("ascii") === "ftyp";
+  const isWebm = buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3;
+  return isMp4 || isWebm;
+}
+
 function buildCaption(index, total) {
   return [
-    "╭━━━━━━━━━━━━━━━━━━╮",
-    "   🎌  𝐀𝐍𝐈𝐌𝐄  𝐕𝐈𝐃𝐄𝐎  🎌",
-    "╰━━━━━━━━━━━━━━━━━━╯",
+    "╔═══════════════════╗",
+    "      🎌 𝗔𝗡𝗜𝗠𝗘 𝗭𝗢𝗡𝗘 🎌",
+    "╚═══════════════════╝",
     "",
-    `🎬 ভিডিও  : ${index}/${total}`,
-    `⚡ মুড       : ${pick(MOODS)}`,
+    `  🎬 Video  ➜  ${index} / ${total}`,
+    `  ⚡ Mood   ➜  ${pick(MOODS)}`,
     "",
-    "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈",
-    `👑 ${CREDIT}`
+    "━━━━━━━━━━━━━━━━━━━━",
+    `  💬 ${pick(TAGLINES)}`,
+    "  🍿 Type \"anime\" to watch another one!"
   ].join("\n");
 }
 
@@ -88,12 +151,12 @@ function download(url, dest) {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36",
-      "Referer": "https://imgur.com/",
-      "Accept": "video/mp4,video/*;q=0.9,*/*;q=0.8"
+      "Accept": "*/*"
     }
   }).then((res) => {
-    const type = String(res.headers["content-type"] || "");
-    if (!type.includes("video")) {
+    const type = String(res.headers["content-type"] || "").toLowerCase();
+    // html/image means the link is dead or removed
+    if (type.includes("text/html") || type.includes("image/")) {
       res.data.destroy();
       throw new Error("Not a video (content-type: " + type + ")");
     }
@@ -132,10 +195,18 @@ function download(url, dest) {
 
 module.exports.run = async ({ api, event }) => {
   const { threadID, messageID } = event;
+
+  if (!creditOk()) {
+    return api.sendMessage(
+      "⛔ The credit has been changed, so this command is disabled.\nPlease restore the original credit.",
+      threadID,
+      messageID
+    );
+  }
+
   const cacheDir = path.join(__dirname, "cache");
   fs.ensureDirSync(cacheDir);
 
-  // প্রতিবার আলাদা ফাইল নাম, যাতে একসাথে অনেকে ব্যবহার করলে ফাইল মিশে না যায়
   const videoPath = path.join(cacheDir, `anime_${Date.now()}_${threadID}.mp4`);
 
   const cleanup = () => {
@@ -147,12 +218,13 @@ module.exports.run = async ({ api, event }) => {
   };
 
   const waitMsg = await new Promise((resolve) =>
-    api.sendMessage("⏳ Anime ভিডিও লোড হচ্ছে, একটু অপেক্ষা করো...", threadID, (err, info) =>
-      resolve(err ? null : info)
+    api.sendMessage(
+      "⏳ Loading your anime video, please wait...",
+      threadID,
+      (err, info) => resolve(err ? null : info)
     )
   );
 
-  // ডাউনলোড ফেল করলে অন্য লিংক দিয়ে আবার চেষ্টা করবে
   const pool = shuffle(LINKS).slice(0, MAX_TRIES);
   let usedUrl = null;
 
@@ -160,11 +232,11 @@ module.exports.run = async ({ api, event }) => {
     try {
       await download(url, videoPath);
       const size = fs.statSync(videoPath).size;
-      if (size > 0 && size <= MAX_SIZE) {
+      if (size >= MIN_SIZE && size <= MAX_SIZE && isVideoFile(videoPath)) {
         usedUrl = url;
         break;
       }
-      console.error(`[anime] bad file size (${url}): ${size}`);
+      console.error(`[anime] invalid video (${url}): size=${size}`);
       cleanup();
     } catch (err) {
       const status = err.response ? ` [HTTP ${err.response.status}]` : "";
@@ -179,7 +251,7 @@ module.exports.run = async ({ api, event }) => {
 
   if (!usedUrl) {
     return api.sendMessage(
-      `❌ Anime ভিডিও পাঠাতে সমস্যা হয়েছে!\nআবার চেষ্টা করো।\n\n👑 ${CREDIT}`,
+      "❌ Could not send an anime video right now!\nPlease try again in a moment.",
       threadID,
       messageID
     );
@@ -200,3 +272,13 @@ module.exports.run = async ({ api, event }) => {
     messageID
   );
 };
+
+// Credit check at load time: if changed, the command is disabled
+if (!creditOk()) {
+  module.exports.run = async ({ api, event }) =>
+    api.sendMessage(
+      "⛔ The credit has been changed, so this command is disabled.",
+      event.threadID,
+      event.messageID
+    );
+  }
