@@ -21,9 +21,9 @@ const SETTINGS = {
   EXEMPT_BOT_ADMINS: true,    // config.json এর ADMINBOT / DEVELOPER সবসময় ছাড় পাবে
   KICK_ON_NAME: true,         // নাম চেঞ্জ করলে কিক
   KICK_ON_PHOTO: true,        // ফটো চেঞ্জ করলে কিক
-  SNAPSHOT_ON_LOAD: true,     // বট চালু হলে সব গ্রুপের ব্যাকআপ নেবে (যেগুলোর ব্যাকআপ নেই)
-  SNAPSHOT_DELAY_MS: 2500,    // এক গ্রুপ থেকে আরেক গ্রুপের ব্যাকআপের মাঝে বিরতি (রেট-লিমিট এড়াতে)
-  MAX_GROUPS_ON_LOAD: 100
+  SNAPSHOT_ON_LOAD: false,    // ⚠️ বন্ধ রাখা হয়েছে: চালুর ১৫ সেকেন্ড পর ১০০টা গ্রুপে getThreadInfo + ছবি ডাউনলোডের বার্স্ট ফেসবুক সেশন কিল করতে পারে (Render-এ ফাইল মুছে যায় বলে প্রতি রিস্টার্টে আবার হতো)। বট ২৪ ঘণ্টা স্থিতিশীল চললে true করুন
+  SNAPSHOT_DELAY_MS: 10000,    // এক গ্রুপ থেকে আরেক গ্রুপের ব্যাকআপের মাঝে বিরতি (রেট-লিমিট এড়াতে)
+  MAX_GROUPS_ON_LOAD: 20
 };
 
 const CREDIT = "乛 M𝆠፝֟R ཐི༏ཋྀ JU𝆠፝֟W𝆠፝֟ELꜛཐི༏ཋྀ࿐";
@@ -203,7 +203,7 @@ module.exports.onLoad = async function ({ api }) {
     } catch (e) {
       console.log("[juwelGuard] onLoad snapshot skipped:", e && e.message);
     }
-  }, 15000);
+  }, 10 * 60 * 1000); // লগইনের ১০ মিনিট পর, আগে না
 };
 
 // ───────────────────────── মূল ইভেন্ট হ্যান্ডলার ─────────────────────────
