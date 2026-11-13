@@ -111,7 +111,16 @@ function loadAppState(filePath, fallback) {
   }
 
   const fromEnv = loadAppStateFromEnv();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) {
+    if (!global.__appStateSourceLogged) {
+      global.__appStateSourceLogged = true;
+      logger(
+        "AppState source: APPSTATE environment variable. The appstate.json file is IGNORED while this variable is set - update/remove the variable if you pasted a new cookie into the file.",
+        "warn"
+      );
+    }
+    return fromEnv;
+  }
 
   const resolved = resolve(filePath || "");
   if (!resolved || !existsSync(resolved)) {
