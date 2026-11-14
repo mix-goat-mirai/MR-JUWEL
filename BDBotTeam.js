@@ -2,25 +2,15 @@
  * Credit: 乛 M𝆠፝֟R ཐི༏ཋྀ JU𝆠፝֟W𝆠፝֟ELꜛཐི༏ཋྀ࿐
  * Team  : বিডি বট টিম (BD Bot Team)
  *
- * BDBotTeam.js — বিডি বট টিম | বটের আসল মেমোরি ম্যানেজমেন্ট (রুট ফোল্ডারে JuwelKeepalive.js-এর পাশে রাখুন)
- *
- * দুই ভাবে কাজ করে:
- *  ১) লঞ্চারে (Juwel.js):  BDBotTeam.launcherArgs()  → বটের Node প্রসেসকে সঠিক heap সীমা (--max-old-space-size)
- *     আর --expose-gc দেয়। হোস্টে যত RAM আছে (container limit), তার হিসাবে সীমা বসায়।
- *  ২) বটের ভেতরে (preload):  প্রতি ৩০ সেকেন্ডে মেমোরি মাপে।
- *       • ৭০%+ হলে  → সফট ক্লিন (GC + পুরনো reply/reaction/cooldown ডাটা + পুরনো ক্যাশ মিডিয়া ফাইল মোছা)
- *       • ৮৮%+ থাকলে → নিরাপদে রিস্টার্ট (OOM-kill হয়ে হঠাৎ বন্ধ হওয়ার আগেই)
- *       • ধীরে ধীরে মেমোরি বাড়তে থাকলে (লিক) ওয়ার্নিং লগ
- *
- * ⚠️ এটা হোস্টের RAM বাড়ায় না। RAM-এর সীমা হোস্ট প্ল্যান ঠিক করে (যেমন Render ফ্রি = 512MB)।
- *    এটা ওই RAM-টা সবচেয়ে ভালোভাবে কাজে লাগায় এবং ক্র্যাশ ঠেকায়।
+ * BDBotTeam.js — মেমোরি ম্যানেজমেন্ট (রুট ফোল্ডারে JuwelKeepalive.js-এর পাশে)
  *
  * ঐচ্ছিক env:
- *   BOT_MEMORY_LIMIT_MB   হোস্টের RAM নিজে বলে দিন (অটো-ডিটেক্ট ঠিক না হলে)
- *   JUWEL_HEAP_PERCENT    heap সীমা % (ডিফল্ট 65)
+ *   BOT_MEMORY_LIMIT_MB       হোস্টের RAM নিজে বলে দিন
+ *   JUWEL_HEAP_PERCENT        heap সীমা % (ডিফল্ট 65)
  *   JUWEL_MEM_SOFT / JUWEL_MEM_HARD   সফট/হার্ড % (ডিফল্ট 70 / 88)
- *   JUWEL_OPTIMIZE_FOR_SIZE=0         ছোট RAM-এ --optimize-for-size বন্ধ করতে
- *   JUWEL_MEMGUARD=off                পুরো গার্ড বন্ধ
+ *   JUWEL_MEM_MAX_RESTARTS    ৬ ঘণ্টায় সর্বোচ্চ কতবার রিস্টার্ট (ডিফল্ট 0 = রিস্টার্ট বন্ধ)
+ *   JUWEL_OPTIMIZE_FOR_SIZE=0 ছোট RAM-এ --optimize-for-size বন্ধ করতে
+ *   JUWEL_MEMGUARD=off        পুরো গার্ড বন্ধ
  */
 "use strict";
 
@@ -97,9 +87,9 @@ function start() {
 
   const log = (m) => console.log("[BD Bot Team] " + m);
 
-  // বারবার রিস্টার্ট = বারবার ফেসবুক লগইন, যা আইডির জন্য ভালো না। তাই সীমা: ৬ ঘণ্টায় সর্বোচ্চ ৩ বার।
+  // [FIX] ডিফল্ট 0 = মেমোরির কারণে নীরব রিস্টার্ট বন্ধ
   const RESTART_FILE = path.join(ROOT, ".bdbotteam-restarts.json");
-  const MAX_RESTARTS = numZ(process.env.JUWEL_MEM_MAX_RESTARTS, 3);
+  const MAX_RESTARTS = numZ(process.env.JUWEL_MEM_MAX_RESTARTS, 0);
   const RESTART_WINDOW = 6 * 60 * 60 * 1000;
   function recentRestarts() {
     try {
@@ -141,7 +131,7 @@ function start() {
     );
   }
 
-  /* পুরনো/অপ্রয়োজনীয় ডাটা সাফ — বটের চলমান ফিচার নষ্ট করে না */
+  /* পুরনো/অপ্রয়োজনীয় ডাটা সাফ */
   function cleanup(reason) {
     const before = process.memoryUsage().rss / MB;
     const done = [];
@@ -153,7 +143,7 @@ function start() {
           const arr = c[key];
           if (Array.isArray(arr) && arr.length > 200) {
             const removed = arr.length - 100;
-            arr.splice(0, removed); // পুরনোগুলো বাদ, নতুন ১০০টা থাকে
+            arr.splice(0, removed);
             done.push(`${key} -${removed}`);
           }
         }
@@ -182,7 +172,7 @@ function start() {
       for (const dir of CACHE_DIRS) {
         if (!fs.existsSync(dir)) continue;
         for (const f of fs.readdirSync(dir)) {
-          if (!MEDIA.test(f)) continue; // শুধু মিডিয়া/টেম্প ফাইল; অন্য কিছু ছোঁয়া হয় না
+          if (!MEDIA.test(f)) continue;
           const p = path.join(dir, f);
           try {
             const st = fs.statSync(p);
@@ -238,17 +228,16 @@ function start() {
         if (now - startedAt >= MIN_UPTIME_RESTART && recentRestarts().length >= MAX_RESTARTS) {
           if (!restartBlockedLogged) {
             restartBlockedLogged = true;
-            log(`🛑 গত ৬ ঘণ্টায় ${MAX_RESTARTS} বার মেমোরির জন্য রিস্টার্ট হয়েছে, আর রিস্টার্ট দিচ্ছি না (ফেসবুক লগইন বারবার এড়াতে)। ` +
-                "মেমোরি সমস্যা থেকেই যাচ্ছে: হোস্টের RAM বাড়ান বা অপ্রয়োজনীয় কমান্ড বন্ধ করুন।");
+            log(`🛑 মেমোরি বেশি, কিন্তু রিস্টার্ট বন্ধ (সীমা ${MAX_RESTARTS})। হোস্টের RAM বাড়ান বা অপ্রয়োজনীয় কমান্ড বন্ধ করুন।`);
           }
         } else if (now - startedAt >= MIN_UPTIME_RESTART) {
           restarting = true;
           noteRestart();
           log(`🔁 OOM ক্র্যাশের আগেই নিরাপদে রিস্টার্ট দিচ্ছি। ${format()}`);
-          setTimeout(() => process.exit(75), 1500); // লঞ্চার অটো রিস্টার্ট করবে
+          setTimeout(() => process.exit(75), 1500);
         } else if (!restartBlockedLogged) {
           restartBlockedLogged = true;
-          log("ℹ️ বট সবে চালু হয়েছে, তাই এখনই রিস্টার্ট দিচ্ছি না (রিস্টার্ট-লুপ ঠেকাতে)।");
+          log("ℹ️ বট সবে চালু হয়েছে, তাই এখনই রিস্টার্ট দিচ্ছি না।");
         }
       }
     } else {
@@ -275,6 +264,20 @@ function start() {
       log(format());
     }
   }
+
+  // [FIX] রাত ১২টার ভারী কাজের আগে (ঢাকা 23:55) ও পরে (00:10) আগেভাগে ক্লিনআপ
+  let lastPreClean = "";
+  const nightTimer = setInterval(() => {
+    try {
+      const t = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Dhaka", hour12: false }).slice(0, 5);
+      const day = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
+      if ((t === "23:55" || t === "00:10") && lastPreClean !== day + t) {
+        lastPreClean = day + t;
+        cleanup("রাতের আগাম ক্লিনআপ " + t);
+      }
+    } catch (_) {}
+  }, 20 * 1000);
+  if (nightTimer.unref) nightTimer.unref();
 
   const timer = setInterval(check, INTERVAL);
   if (timer.unref) timer.unref();
