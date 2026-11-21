@@ -37,8 +37,12 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         ? threadSetting.PREFIX
         : PREFIX
     );
-    const prefixRegex = new RegExp(`^(<@!?${senderID}>|${escapeRegex(threadPrefix)})\\s*`);
-    const prefixOnlyMessage = typeof body === 'string' && body.trim() !== '' && body.trim() === threadPrefix;
+    // মেন প্রিফিক্স সবসময় চলবে; এক্সট্রা প্রিফিক্স চলবে শুধু "prefix on" দেওয়া থাকলে
+    const allPrefixes = [threadPrefix, ...(global.extraPrefixEnabled === true && Array.isArray(global.extraPrefixes) ? global.extraPrefixes.map(String) : [])]
+      .filter((p, i, a) => p && a.indexOf(p) === i)
+      .sort((a, b) => b.length - a.length);
+    const prefixRegex = new RegExp(`^(<@!?${senderID}>|${allPrefixes.map(escapeRegex).join('|')})\\s*`);
+    const prefixOnlyMessage = typeof body === 'string' && body.trim() !== '' && allPrefixes.includes(body.trim());
     const prefixMatch = prefixOnlyMessage ? [body] : (body ? body.match(prefixRegex) : null);
     if (!prefixMatch && (!body || !body.trim())) return;
     var noPrefixCommand = null;
