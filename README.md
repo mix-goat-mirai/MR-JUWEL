@@ -8,7 +8,7 @@
 <p align="center"><b>▶️ ছবিতে ক্লিক করে YouTube টিউটোরিয়াল দেখুন — কিভাবে Messenger Bot বানাবেন ও রান দিবেন</b><br/>Click the image above to watch the step-by-step tutorial on YouTube.</p>
 
 <p align="center">
-  <a href="https://www.youtube.com/@BdBotTame"><img alt="BD Bot Tame YouTube Channel" src="https://img.shields.io/badge/YouTube-BD_Bot_Team-FF0000?style=for-the-badge&logo=youtube&logoColor=white"></a>
+  <a href="https://www.youtube.com/@BdBotTeam"><img alt="BD Bot Tame YouTube Channel" src="https://img.shields.io/badge/YouTube-BD_Bot_Team-FF0000?style=for-the-badge&logo=youtube&logoColor=white"></a>
 </p>
 
 ---
