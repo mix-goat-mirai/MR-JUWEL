@@ -161,18 +161,18 @@ const uptimeParts = (sec) => {
   const s = Math.max(0, Math.floor(sec));
   return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
 };
-// সময় সবসময় এই ক্রমে: সেকেন্ড → মিনিট → ঘণ্টা → দিন
+// সময় সবসময় এই ক্রমে: দিন → ঘণ্টা → মিনিট → সেকেন্ড
 const fmtDur = (ms) => {
   const u = uptimeParts(ms / 1000);
-  return u.s + "s " + u.m + "m " + u.h + "h " + u.d + "d";
+  return u.d + "d " + pad2(u.h) + "h " + pad2(u.m) + "m " + pad2(u.s) + "s";
 };
-// সব নোটিশে একই সাজানো সময়-ব্লক (সেকেন্ড → মিনিট → ঘণ্টা → দিন)
+// সব নোটিশে একই সাজানো সময়-ব্লক (দিন → ঘণ্টা → মিনিট → সেকেন্ড)
 const uptimeLines = (up) =>
-  " ┌ ⏳ SECONDS ➤ " + pad2(up.s) + "\n" +
-  " ├ ⏰ MINUTES ➤ " + pad2(up.m) + "\n" +
+  " ┌ 📆 DAYS ➤ " + pad2(up.d) + "\n" +
   " ├ 🕐 HOURS ➤ " + pad2(up.h) + "\n" +
-  " └ 📆 DAYS ➤ " + pad2(up.d) + "\n" +
-  " ✦ " + pad2(up.s) + "s " + pad2(up.m) + "m " + pad2(up.h) + "h " + up.d + "d";
+  " ├ ⏰ MINUTES ➤ " + pad2(up.m) + "\n" +
+  " └ ⏳ SECONDS ➤ " + pad2(up.s) + "\n" +
+  " ✦ " + up.d + "d " + pad2(up.h) + "h " + pad2(up.m) + "m " + pad2(up.s) + "s";
 
 // ইংরেজি অক্ষর ও সংখ্যা → 𝗔𝗕𝗖𝗗 𝟭𝟮𝟯 (Sans-Serif Bold). বাংলা/ইমোজি অপরিবর্তিত থাকে।
 const fx = (str) => String(str).replace(/[A-Za-z0-9]/g, (c) => {
@@ -343,16 +343,23 @@ function sendStopNotice(reason) {
   log("বট বন্ধ হচ্ছে: " + reason, "warn");
   watchSend("REASON:" + reason);
   heartbeatFail();
+  // বট যেসব গ্রুপে আছে সেখানে "বন্ধ হচ্ছে" নোটিশ (includes/byebye.js) — শেষ হওয়া পর্যন্ত বট বাঁচে
+  const groupP = (typeof global.__juwelGroupStopNotice === "function")
+    ? Promise.resolve().then(() => global.__juwelGroupStopNotice(reason)).catch(() => {})
+    : Promise.resolve();
   // আগেই গেছে বা অন্য প্রসেস পাঠাচ্ছে → আর নয় (ওয়াচডগকেও জানিয়ে দেয়)
   if (!claim("stop")) {
     watchSend("SENT");
-    stopPromise = Promise.resolve(false);
+    stopPromise = groupP.then(() => false);
     return stopPromise;
   }
   stopPromise = Promise.race([
-    sendExternal(stopText(reason))
-      .then((ok) => { if (ok) { markSent("stop"); watchSend("SENT"); } else release("stop"); return ok; })
-      .catch(() => { release("stop"); return false; }),
+    Promise.all([
+      groupP,
+      sendExternal(stopText(reason))
+        .then((ok) => { if (ok) { markSent("stop"); watchSend("SENT"); } else release("stop"); return ok; })
+        .catch(() => { release("stop"); return false; })
+    ]).then((r) => r[1]),
     new Promise((res) => setTimeout(res, STOP_NOTICE_WAIT_MS))
   ]);
   return stopPromise;
@@ -883,4 +890,4 @@ if (IS_WATCHER) {
   // ক্রেডিট বদলানো থাকলে চালু হবে না, শুধু LOCKED নোটিশ যাবে
   if (!integrity().ok) lockedStart();
   else { try { start(); } catch (e) { log("start ত্রুটি: " + e.message, "error"); } }
-}
+    }
