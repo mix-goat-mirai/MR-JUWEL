@@ -1,57 +1,74 @@
-{
-  "name": "mirai-goat-mix-mix",
-  "version": "3.0.0",
-  "description": "MIRAI + GoatBot hybrid Messenger bot - runs Mirai AND GoatBot commands/events side by side. Based on Mirai (乛 M𝆠፝֟R ཐི༏ཋྀ JU𝆠፝֟W𝆠፝֟ELꜛཐི༏ཋྀ࿐).",
-  "main": "Juwel.js",
-  "engines": {
-    "node": "22.x",
-    "npm": ">=10.0.0 <13.0.0"
-  },
-  "scripts": {
-    "start": "node Juwel.js",
-    "login": "node login"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/GOAT-MIRAI-MIX/MR-JUWEL.git"
-  },
-  "keywords": [
-    "bot",
-    "facebook",
-    "juwelproject",
-    "messenger",
-    "javascript",
-    "JUWEL",
-    "mirai",
-    "goat",
-    "goat mirai mix bot"
-  ],
-  "author": "乛 M𝆠፝֟R ཐི༏ཋྀ JU𝆠፝֟W𝆠፝֟ELꜛཐི༏ཋྀ࿐",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/GOAT-MIRAI-MIX/MR-JUWEL/issues"
-  },
-  "homepage": "https://github.com/GOAT-MIRAI-MIX/MR-JUWEL#readme",
-  "dependencies": {
-    "@miraipr0ject/assets": "^1.0.9",
-    "axios": "^1.6.0",
-    "canvas": "^3.2.0",
-    "chalk": "^4.1.2",
-    "express": "^4.19.2",
-    "form-data": "^4.0.0",
-    "fs-extra": "^11.2.0",
-    "image-downloader": "^4.3.0",
-    "moment": "^2.29.4",
-    "moment-timezone": "^0.5.43",
-    "mr-juwel-fca": "latest",
-    "node-schedule": "^2.1.1",
-    "request": "^2.88.2",
-    "sequelize": "^6.21.4",
-    "shaon-videos-downloader": "^1.0.1",
-    "sqlite3": "^5.1.7",
-    "string-similarity": "^4.0.4",
-    "yt-search": "^2.10.4",
-    "ytdl-core": "^4.11.2",
-    "youtube-search-api": "^2.0.1"
-  }
-}
+[
+    {
+        "key": "datr",
+        "value": "Wj0Ga86Mxw6sLsaR84e62Smo",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.111Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "sb",
+        "value": "Wz0Ga2EHpGWNGO0vP4Ik5BrF",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "wd",
+        "value": "1280x585",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "dpr",
+        "value": "1.5",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "c_user",
+        "value": "61595366657504",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "fr",
+        "value": "1F5Z5ZYy9cc39i2bd.AWcGEdikE02tKVI5NHDmNRaHrpQEdF_qMQEtI1yn_uPcmJT-A-w.BrBj2g..AAA.0.0.BrBj2g.AWfvN0xtjI9b34DT0q70DgU1yNU",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "xs",
+        "value": "47%3AmBaTnnyqMJc5Lg%3A2%3A1795571099%3A-1%3A-1%3A%3AAc33cK09pTqOjtu4DmjMWlSLP3Ix1kt1loIgUWp-KQ",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    },
+    {
+        "key": "presence",
+        "value": "C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1795571107110%2C%22v%22%3A1%7D",
+        "domain": "facebook.com",
+        "path": "/",
+        "hostOnly": false,
+        "creation": "2026-11-25T01:46:06.112Z",
+        "lastAccessed": "2026-11-25T01:46:06.112Z"
+    }
+]
