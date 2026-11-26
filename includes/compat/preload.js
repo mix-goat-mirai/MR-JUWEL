@@ -14,6 +14,7 @@
 
 const Module = require("module");
 const path = require("path");
+require("../Juwel_uptimekeeper"); // আপটাইম রিডিপ্লয়েও ধরে রাখে
 const runtime = require("./goatRuntime");
 
 const COMMANDS_DIR = path.sep + path.join("Script", "commands") + path.sep;
