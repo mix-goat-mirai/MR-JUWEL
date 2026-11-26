@@ -53,11 +53,8 @@ const ON_WORDS = ["bot on", "boton", "বট অন", "বটঅন"];
 const OFF_WORDS = ["bot off", "botoff", "বট অফ", "বটঅফ"];
 const STATUS_WORDS = ["bot status", "botstatus", "বট স্ট্যাটাস"];
 
-let startedAt = Date.now();
-if (!process.__powerUptimePatched) {
-  process.uptime = () => (Date.now() - startedAt) / 1000;
-  process.__powerUptimePatched = true;
-}
+// আপটাইম এখন Juwel_uptimekeeper-এ সেভ হয়, তাই রিডিপ্লয়/কোড এডিটে হারায় না
+const _keeper = require("./Juwel_uptimekeeper");
 
 let state = { enabled: true, offAt: null, offBy: null };
 try {
@@ -280,8 +277,8 @@ function turnOff(api, event, ms) {
   const release = () => { if (!released) { released = true; bypass = Math.max(0, bypass - 1); } };
   setTimeout(release, 15000);
   const rows = [
-    "⏱️ Was online for: " + fmt(now - startedAt),
-    "🕒 Online since: " + stamp(startedAt),
+    "⏱️ Was online for: " + fmt(now - _keeper.getStartedAt()),
+    "🕒 Online since: " + stamp(_keeper.getStartedAt()),
     "🕒 Turned off at: " + stamp(now)
   ];
   if (until) {
@@ -309,7 +306,7 @@ function turnOn(api, event, auto) {
   state.enabled = true; state.offAt = null; state.offBy = null; state.offUntil = null; state.offThread = null;
   lastTick = now;
   save();
-  startedAt = now;
+  _keeper.reset(now);
   try { if (global.client) global.client.timeStart = now; } catch (_) {}
   // NOTE: the old OFF duration is intentionally NOT shown — uptime starts fresh
   rawSend(api, frame("🟢 BOT ON ✅", [
@@ -327,7 +324,7 @@ function turnOn(api, event, auto) {
 function status(api, event) {
   rawSend(api, frame(isOn() ? "🟢 BOT STATUS" : "🔴 BOT STATUS", [
     "📡 Status: " + (isOn() ? "Online ✅" : "Offline ⛔"),
-    "⏱️ Uptime: " + fmt(Date.now() - startedAt),
+    "⏱️ Uptime: " + fmt(Date.now() - _keeper.getStartedAt()),
     "🕒 Time now: " + stamp(Date.now()),
     ...infoRows()
   ]), event.threadID, event.messageID);
